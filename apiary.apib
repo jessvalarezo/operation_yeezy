@@ -1,0 +1,268 @@
+FORMAT: 1A
+HOST: https://notify.s.docker.com/v1/
+
+# Notification Service API
+
+Notification Service is an API allowing SaaS services to send notifications to users and orgs.
+For now this service will support emails. 
+
+## Email
+
+### Templates
+
+Any subject, text or html string will be rendered as a Go template.
+For examples, refer to: https://golang.org/pkg/text/template/ and 
+https://golang.org/pkg/html/template/. 
+The client has the option of customizing a template by using the following reserved variables:
+
+ - Username: string
+ - FullName: string
+ - Email: string
+
+According to Go templates, variables should be enclosed in a double curly brace:
+"Hello {{.Username}}".
+
+### Tags
+The client has the option of categorizing outgoing email traffic. 
+An outgoing message can be tagged with a custom value, so when the client accesses states on their messages, they can be aggregated by these tags. 
+Note: tags are case insensitive and should be ascii only. Maximum of three tags (strings) allowed.
+To see more, refer to Mailgun's documentation on tagging messages:
+https://documentation.mailgun.com/user_manual.html#tagging
+
+### Email a Docker User [POST /user/{uuid}/email]
+
+You may create and send an email to a Docker User using this action.
+It takes a JSON object containing necessary and optional fields to send an email.
+
++ Parameters
+    + uuid (string, required) - a Docker User ID.
+    + subject (string, required) - Message subject.
+    + text (string, required) - Body of the message. Text version.
+    + html (string, optional) - Body of the message. HTML version.
+    + tags (array[string], optional) - Tags to categorize a message. Max is a three-string array.
+    
+
++ Request (application/json)
+
+        {
+            "subject": "Here's a notification, {{.Username}}!",
+            "text": "Here's an exciting update for {{.Username}}.",
+            "html": "<html>HTML version of the body for {{.Username}}</html>",
+            "tags": ["billing", "invoice", "weekly"],
+        }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + uuid (string)
+        + email (Email Resource)
+
+    + Body
+    
+            {
+                "subject": "Here's a notification, {{.Username}}!",
+                "text": "Here's an exciting update for {{.Username}}.",
+                "html": "<html>HTML version of the body for {{.Username}}</html>",
+                "tags":["billing", "invoice", "weekly"],
+            }
+
++ Response 400 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+               "message": "The request was invalid. Check for missing required attribute."
+            }
+
++ Response 404 (application/json)
+    +  Attributes (Error Base)
+    
+    +  Body
+
+            {
+               "message": "The URI request is not valid or the resource requested does not exist.",
+               "errors": [
+                   {
+                       "field": "uuid",
+                       "message": "This Docker User uuid was not found."
+                   }
+               ]
+            }
+
++ Response 500 (application/json)
+    +  Attributes (Error Base)
+    
+    +  Body
+
+            {
+                "message": "We had a problem with our server. Try again later."
+            }
+
+### Email all members in a Docker Org [POST /orgs/{uuid}/all/email]
+
+You may create and send an email to all of the members within a Docker Org using this action. 
+It takes a JSON object containing necessary and optional fields to send the emails.
+
++ Parameters
+    + uuid (string, required) - Docker Org ID.
+    + subject (string, required) - Message subject.
+    + text (string, required) - Body of the message. Text version.
+    + html (string, optional) - Body of the message. HTML version.
+    + tags (array[string], optional) - Tags to categorize a message. Max is a three-string array.
+    
++ Request (application/json)
+
+        {
+            "subject": "Here's a notification, {{.Username}}!",
+            "text": "Here's an exciting update for {{.Username}}.",
+            "html": "<html>HTML version of the body for {{.Username}}</html>"
+            "tags": ["billing", "invoice", "weekly"],
+        }
+
++ Response 200 (application/json)
+
+    + Attibutes(object)
+        + uuid (string)
+        + email (Email Resource)
+
+    + Body
+    
+            {
+                "subject": "Here's a notification, {{.Username}}!",
+                "text": "Here's an exciting update for {{.Username}}.",
+                "html": "<html>HTML version of the body for {{.Username}}</html>",
+                "tags": ["billing", "invoice", "weekly"],
+                "error": {
+                    "message": "Partial failure has been logged."
+                }
+            }
+
++ Response 400 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+               "message": "The request was invalid. Check for missing required attribute."
+            }
+
++ Response 404 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+                "message": "The URI request is not valid or the resource requested does not exist.",
+                "errors": [
+                    {
+                        "field": "uuid",
+                        "message": "This Docker Org uuid was not found."
+                    }
+                ]
+            }
+
++ Response 500 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+                "message": "We had a problem with our server. Try again later."
+            }
+
+### Email all members in a Docker Org team [POST /orgs/{uuid}/group/{group_name}/email]
+
+You may create and send an email to all of the members of a given group within a Docker Org using this action. 
+It takes a JSON object containing necessary and optional fields to send emails.
+
++ Parameters
+    + uuid (string, required) - a Docker Org ID.
+    + group_name (string, required) - a unique group within given Docker Org.
+    + subject (string, required) - Message subject.
+    + text (string, required) - Body of the message. Text version.
+    + html (string, optional) - Body of the message. HTML version.
+    + tags (array[string], optional) - Tags to categorize a message. Max is a three-string array.
+
++ Request (application/json)
+
+        {
+            "subject": "Here's a notification, {{.Username}}!",
+            "text": "Here's an exciting update for {{.Username}}.",
+            "html": "<html>HTML version of the body for {{.Username}}</html>",
+            "tags": ["billing", "invoice", "weekly"],
+        }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + uuid (string)
+        + group_name (string)
+        + email (Email Resource)
+
+    + Body
+    
+            {
+                "subject": "Here's a notification!",
+                "text": "Here's an exciting update.",
+                "html": "<html>HTML version of the body</html>",
+                "tags": ["billing", "invoice", "weekly"],
+                "error": {
+                    "message": "Partial failure has been logged."
+                }
+            }
+
++ Response 400 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+               "message": "The request was invalid. Check for missing required attribute."
+            }
+
++ Response 404 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+                "message": "The URI request is not valid or the resource requested does not exist.",
+                "errors": [
+                    {
+                        "field": "uuid",
+                        "message": "This Docker Org uuid was not found."
+                    },
+                    {
+                        "field": "group_name",
+                        "message": "This Docker Org name was not found."
+                    }
+                ]
+            }
+
++ Response 500 (application/json)
+    + Attributes (Error Base)
+    
+    + Body
+
+            {
+                "message": "We had a problem with our server. Try again later."
+            }
+
+
+# Data Structures
+
+## Error Item (object)
++ field (string, required)
++ message (string, required)
+
+## Error Base (object)
++ message(string, required) - Human-readable error description.
++ errors(array[Error Item], optional)
+
+## Email Resource (object) - The contents of the email.
++ subject(string, required)
++ text(string, required)
++ html(string, optional)
++ tags (array[string], optional)
++ error(object, optional) - Partial failure. At least one email was not sent to a Docker User.
